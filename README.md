@@ -26,3 +26,29 @@
 4. 지역별 자살률- 
 
 
+```{r}
+getwd()
+
+```
+```{r}
+library(dplyr)
+library(tidyr)
+```
+```{r}
+Crim<-read.csv('범죄_발생_및_검거_현황_전국__20210414203503.csv')
+Crim<-Crim%>%select('시점','데이터')
+total_people<-read.csv('행정구역_시군구_별__성별_인구수_20210414211337.csv')
+total_people<-total_people%>%select('시점','데이터')
+Crim1<-left_join(Crim,total_people,by='시점')
+names(Crim1)[c(2,3)]<-c('범죄발생건수','총인구')
+Crim1<-Crim1%>%mutate((범죄발생건수/총인구)*100,000)%>%filter(시점>=2014)%>%select(!'0')
+View(Crim1)
+```
+```{r}
+dead<-read.csv('나무위키- 자살률.csv')%>%gather(Year,n)
+dead$Year<-gsub("X", "", dead$Year,)
+dead<-dead[-1,]%>%filter(Year>=2014)
+names(dead)[c(1,2)]<-c('년도','자살율')
+dead
+```
+
