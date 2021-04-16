@@ -1,0 +1,125 @@
+---
+title: "Untitled"
+author: "ddd"
+date: '2021 4 17 '
+output: html_document
+---
+## 데이터 기술통계 및 교차분석
+## (대립)가설: 각 집권 정치 성향별로 범죄 안전도 인식 정도가 다를 것이다.
+- 필요한 라이브러리 불러오기
+```{r}
+#install.packages('sjPlot')
+library(sjPlot)
+library(dplyr)
+library(tibble)
+library(gmodels)
+```
+## 데이터
+## 조사대상 : 약 27,336 표본가구의 만 13세 이상 상주 가구원
+                  (1,548개 조사구, 조사구당 16~20가구)
+## 2015년 인구주택총조사의 일반 조사구(1, A)
+- 일반 조사구 중 조사가 어려운 섬지역과 기숙시설, 특수사회시설은 제외
+- 표본추출틀의 포함률은 조사모집단 대비 전국 기준 조사구 99.8% 수준임
+```{r}
+think<-read.csv('사회안전에_대한_인식도_범죄__13세_이상_인구__20210417014140.csv')%>%mutate((X2016/100)*27336)%>%mutate((X2018/100)*27336)%>%column_to_rownames(var='항목')
+think<-think[,c(-1,-2)]
+names(think)<-c('2015~2016 박근혜 정권','2017~2018 문제인 정권')
+View(think)
+print(fit.fis<-CrossTable(as.matrix(think),expected=T,chisq=T,prop.c = F,prop.r =F,prop.chisq = F,prop.t = F ))
+
+```
+# 값이 계속 이상하게 나와유...
+```{r}
+rep.row<-function(x,n){
+m <- matrix(rep(x,each=n),nrow=n)
+return(m)
+}
+think_g<- data.frame(rbind(rep.row(c("2015~2016 박근혜 정권", "매우 안전"), 246),
+  rep.row(c("2015~2016 박근혜 정권", "비교적 안전"), 2268),
+  rep.row(c("2015~2016 박근혜 정권", "보통"), 6478),
+  rep.row(c("2015~2016 박근혜 정권", "비교적 안전하지 않음"), 11535),
+  rep.row(c("2015~2016 박근혜 정권", "매우 안전하지 않음"), 6806),
+  rep.row(c("2017~2018 문제인 정권", "매우 안전"), 492),
+  rep.row(c("2017~2018 문제인 정권", "비교적 안전"), 4209),
+  rep.row(c("2017~2018 문제인 정권", "보통"), 8747),
+  rep.row(c("2017~2018 문제인 정권", "비교적 안전하지 않음"), 10387),
+  rep.row(c("2017~2018 문제인 정권", "매우 안전하지 않음"), 3499)))
+names(think_g) <- c('집권당', "사회 범죄 안전도에 대한 인식")
+View(think_g)
+sjt.xtab(think_g$`사회 범죄 안전도에 대한 인식`,think_g$집권당 ,show.col.prc=T, show.exp=T,var.labels=c('사회 범죄 안전도에 대한 인식','집권당'),value.labels=list(c('매우안전','비교적 안전','보통','비교적 안전하지 않음','매우 안전하지 않음'),c('2015~2016 박근혜 정권','2017~2018 문제인 정권')),encoding='EUC-KR')
+
+set_theme(geom.label.size = 4.5, axis.textsize = 1.1,legend.pos="bottom")
+# 도표의 형태는 막대바 형태로 지정, 비율은 열 백분율을 출력하도록 설저하기 위해 margin='col'이렇게 값을 두었다.
+plot_xtab(think_g$`사회 범죄 안전도에 대한 인식`, think_g$집권당, type="bar",
+y.offset = 0.01,
+margin = "col", coord.flip = T, wrap.labels = 7,
+geom.colors = "Set2", show.summary = T, show.total = F,
+axis.titles = '사회 범죄 안전도에 대한 인식',
+axis.labels = c('매우안전','비교적 안전','보통','비교적 안전하지 않음','매우 안전하지 않음'),
+legend.title = "집권당",
+legend.labels = c('2015~2016 박근혜 정권','2017~2018 문제인 정권'))
+```
+
+## 집권당에 따라 삶의 만족도가 달라질 것이다.
+```{r}
+life_1<-read.csv('삶의_만족도_시도__20210417030538.csv')%>%mutate(((X2015+X2016)/200)*27336)%>%mutate(((X2017+X2018)/200)*27336)%>%column_to_rownames(var='항목')
+life_1<-life_1[,c(-1,-2,-3,-4)]
+View(life_1)
+names(life_1)<-c('2015~2016 박근혜 정권','2017~2018 문제인 정권')
+print(fit.fis<-CrossTable(as.matrix(life_1),expected=T,chisq=T,prop.c = F,prop.r =F,prop.chisq = F,prop.t = F ))
+```
+
+# 2015~2016년 데이터를 합칠려고 평균을 내다보니 아래와 같이 값이 같아지는 경우가 생긴다..
+```{r}
+rep.row<-function(x,n){
+m <- matrix(rep(x,each=n),nrow=n)
+return(m)
+}
+life_g<- data.frame(rbind(rep.row(c("2015~2016 박근혜 정권", "매우만족"), 3143),
+  rep.row(c("2015~2016 박근혜 정권", "약간 만족"), 7203),
+  rep.row(c("2015~2016 박근혜 정권", "보통"), 12574),
+  rep.row(c("2015~2016 박근혜 정권", "약간 불만족"), 3430),
+  rep.row(c("2015~2016 박근혜 정권", "매우 불만족"),984),
+  rep.row(c("2017~2018 문제인 정권", "매우만족"), 2446),
+  rep.row(c("2017~2018 문제인 정권", "약간 만족"), 7203),
+  rep.row(c("2017~2018 문제인 정권", "보통"), 12437),
+  rep.row(c("2017~2018 문제인 정권", "약간 불만족"), 4114),
+  rep.row(c("2017~2018 문제인 정권", "매우 불만족"), 1134)))
+names(life_g) <- c('집권당', "삶의 만족도")
+View(life_g)
+sjt.xtab(life_g$`삶의 만족도`,life_g$집권당 ,show.col.prc=T, show.exp=T,var.labels=c('삶의 만족도','집권당'),value.labels=list(c('매우만족','약간 만족','보통','약간 불만족','매우 불만족'),c('2015~2016 박근혜 정권','2017~2018 문제인 정권')),encoding='EUC-KR')
+
+set_theme(geom.label.size = 4.5, axis.textsize = 1.1,legend.pos="bottom")
+# 도표의 형태는 막대바 형태로 지정, 비율은 열 백분율을 출력하도록 설저하기 위해 margin='col'이렇게 값을 두었다.
+plot_xtab(life_g$`삶의 만족도`, life_g$집권당, type="bar",
+y.offset = 0.01,
+margin = "col", coord.flip = T, wrap.labels = 7,
+geom.colors = "Set2", show.summary = T, show.total = F,
+axis.titles = '삶의 만족도',
+axis.labels = c('매우만족','약간 만족','보통','약간 불만족','매우 불만족'),
+legend.title = "집권당",
+legend.labels = c('2015~2016 박근혜 정권','2017~2018 문제인 정권'))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
