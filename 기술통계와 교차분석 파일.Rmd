@@ -1,7 +1,7 @@
 ---
 title: "교차분석"
-author: "ddd"
-date: '2021 4 17 '
+author: "신은주"
+date: '2021년 4월 17일 '
 output: html_document
 ---
 ## 데이터 기술통계 및 교차분석
