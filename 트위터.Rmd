@@ -1,0 +1,157 @@
+---
+title: "Untitled"
+author: "김유은"
+date: '2021 4 17 '
+output: html_document
+---
+
+```{r}
+#패키지 설치 및 불러오기 
+# install.packages("tm")
+
+library(tm)
+library(ggplot2)
+library(rtweet)
+library(wordcloud2)
+library(wordcloud)
+library(syuzhet)
+library(stringr)
+library("rJava")
+#install.packages("memorise")
+library(KoNLP)
+library(dplyr)
+#install.packages("RColorBrewer")#색상
+#install.packages("extrafont")#폰트
+library(RColorBrewer)
+library(extrafont)
+source(file = "TwitterAPIKey.R", echo = FALSE)
+
+# 트위터 #더불어민주당
+keyword1 <- enc2utf8("#더불어민주당","범죄")
+trendingTweets = search_tweets(keyword1, n=18000, lang ="ko")
+save(trendingTweets, file = "더불어.Rda")
+load("더불어.Rda")
+length(trendingTweets)
+
+View(trendingTweets)
+useNIADic()#사전설정
+
+
+#데이터 불러오기 
+txt <- trendingTweets # #더불어민주당 텍스트 불러오기 
+txt_df<- as.data.frame(txt) #데이터프레임으로 변경
+
+#트윗 결과 중 텍스트 부분만 추출 ***
+t_txt1 <- as.character(txt_df$text) #text만 가져오기 
+t_txt1<-sapply(t_txt1,extractNoun,USE.NAMES=F)#명사추출
+t_txt1<-unlist(t_txt1)
+t_txt1 <-Filter(function(x){nchar(x)>=2& nchar(x)<= 6},t_txt1) #두 글자 이상 단어만 뽑아내기
+
+
+
+head(t_txt1,30)
+
+useSejongDic()
+options(mc.cores=1)
+
+
+#필요없는 단어 제거 
+t_txt1 <-gsub("http","",t_txt1)
+t_txt1 <-gsub("후쿠시","",t_txt1)
+t_txt1 <-gsub("제원","",t_txt1)
+t_txt1 <-gsub("막둥","",t_txt1)
+t_txt1 <-gsub("\"<U+032E>","",t_txt1)
+t_txt1 <-gsub("야근","",t_txt1)
+t_txt1 <-gsub("후원금","",t_txt1)
+t_txt1 <-gsub("즈백이랑","",t_txt1)
+t_txt1 <-gsub("이","",t_txt1)
+t_txt1 <-gsub("서웨","",t_txt1)
+t_txt1 <-gsub("마","",t_txt1)
+
+#여기가 이상합니다 
+
+nohandles <- str_replace_all(t_txt1, "#\\w+", "")
+wordCorpus <- Corpus(VectorSource(nohandles))
+wordCorpus <- tm_map(wordCorpus,removePunctuation)#문장부호제거
+wordCorpus <- tm_map(wordCorpus,removeNumbers) #숫자제거
+wordCorpus <- tm_map(wordCorpus, stripWhitespace) #두칸 빈칸 없애기
+
+
+dtm_corp<- DocumentTermMatrix(wordCorpus)
+
+# dtm_corp 를 matrix로 변환해서 열 합계를 구하기
+dtm_corp %>% as.matrix() %>% colSums()-> wordFreq
+#내림차순 정렬
+wordFreq <- wordFreq[order(wordFreq, decreasing = TRUE)]
+head(x = wordFreq, n = 20)
+#데이터프레임으로 변경
+wordDf <- data.frame( word = names(x = wordFreq),
+                              freq = wordFreq,
+                              row.names = NULL) %>% arrange(desc(x = freq))
+
+# 워드클라우드로 나타내기 
+pal <- brewer.pal(10,"Set3") #팔레트 정하기
+wordcloud2(wordDf, color= pal,fontFamily="NanumGothic")
+
+
+
+
+```
+
+```{r}
+keyword2 <- enc2utf8("#국민의힘")
+keyword2 = search_tweets(keyword2, n=18000, lang ="ko")
+save(keyword2, file = "국힘.Rda")
+
+
+#데이터 불러오기 
+con1 <- keyword2 # #국민의힘 텍스트 불러오기 
+con1_df<- as.data.frame(con1) #데이터프레임으로 변경
+
+#트윗 결과 중 텍스트 부분만 추출 ***
+t_con1 <- as.character(con1_df$text) #text만 가져오기 
+t_con1<-sapply(t_con1,extractNoun,USE.NAMES=F)#명사추출
+t_con1<-unlist(t_con1)
+t_con1 <-Filter(function(x){nchar(x)>=2& nchar(x)<= 6},t_con1) #두 글자 이상 단어만 뽑아내기
+
+
+
+head(t_con1,30)
+
+#필요없는 단어 제거 
+t_con1 <-gsub("<U+200B>","",t_con1)
+t_con1 <-gsub("https","",t_con1)
+t_con1 <-gsub("네이버","",t_con1)
+t_con1 <-gsub("블로그","",t_con1)
+#여기가 이상합니다 
+i <- 9 #첫번째 트윗으로 지정해놓고 필요없는 단어 지우기 
+t_con1[i]
+nohandles2 <- str_replace_all(t_con1, "#\\w+", "")
+nohandles2[i]
+wordCorpus2 <- Corpus(VectorSource(nohandles2))
+wordCorpus2 <- tm_map(wordCorpus2,removePunctuation)#문장부호제거
+wordCorpus2 <- tm_map(wordCorpus2,removeNumbers) #숫자제거
+
+wordCorpus2 <- tm_map(wordCorpus2, stripWhitespace) #두칸 빈칸 없애기
+
+
+
+dtm_corp2<- DocumentTermMatrix(wordCorpus2)
+
+# dtm_corp 를 matrix로 변환해서 열 합계를 구하기
+dtm_corp2 %>% as.matrix() %>% colSums()-> wordFreq2
+#내림차순 정렬
+wordFreq2 <- wordFreq2[order(wordFreq2, decreasing = TRUE)]
+head(x = wordFreq2, n = 20)
+
+#데이터프레임으로 변경
+
+wordDf2 <- data.frame( word = names(x = wordFreq2),freq = wordFreq2,row.names = NULL)%>%arrange(desc(x = freq))
+
+
+blues <- brewer.pal(8, "Blues")[-(1:2)]
+
+wordcloud(wordDf2$word, wordDf2$freq, max.words=200, colors=blues)
+
+
+```
