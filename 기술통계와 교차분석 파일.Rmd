@@ -1,19 +1,101 @@
 ---
-title: "교차분석"
+title: "기술통계 및 교차분석"
 author: "신은주"
 date: '2021년 4월 17일 '
 output: html_document
 ---
-## 데이터 기술통계 및 교차분석
-## (대립)가설: 각 집권 정치 성향별로 범죄 안전도 인식 정도가 다를 것이다.
+
 - 필요한 라이브러리 불러오기
 ```{r}
+#install.packages("gridExtra")
+library(gridExtra)
 #install.packages('sjPlot')
 library(sjPlot)
 library(dplyr)
 library(tibble)
 library(gmodels)
+library(ggplot2)
+library(tidyr)
 ```
+
+## 데이터 기술통계
+# 각 년도 사회 범죄에 대한 안전 인식도
+```{r}
+think_ratio<-read.csv('사회안전에_대한_인식도_범죄__13세_이상_인구__20210417014140.csv')%>%gather(year,n,2:3)
+think_ratio$year<-gsub("X", "", think_ratio$year,)
+View(think_ratio)
+think_ratio%>% ggplot(aes(x=year ,y=n, fill=항목)) + geom_bar(stat='identity',position='dodge')+labs(y="ratio")+facet_wrap('항목',scales='free')
+```
+## 박근혜 정권때 시민들의 사회 범죄 안전도에 대한 인식
+```{r}
+p1<-think_ratio%>%filter(year<=2016)%>%ggplot(aes(x="", y=n, fill=항목))+geom_bar(stat='identity',color=NA)+theme_void()+coord_polar("y",start=90) +geom_text(aes(label=paste0(round(n,1),'%')),position=position_stack(vjust=0.5),color='white',family='serif',size=5)+ggtitle('2015~2016 박근혜정권')
+```
+## 문제인 정권때 시민들의 사회 범죄 안전도에 대한 인식
+```{r}
+p2<-think_ratio%>%filter(year>2016)%>%ggplot(aes(x="", y=n, fill=항목))+geom_bar(stat='identity',color=NA)+theme_void()+coord_polar("y",start=90) +geom_text(aes(label=paste0(round(n,1),'%')),position=position_stack(vjust=0.5),color='white',family='serif',size=5)+ggtitle('2015~2016 문제인 정권')
+```
+```{r}
+grid.arrange(p1, p2, ncol=2)
+```
+## 각 년도 삶의 만족도 정도
+```{r}
+life_ratio<-read.csv('삶의_만족도_시도__20210417030538.csv')%>%mutate((X2015+X2016)/2)%>%mutate((X2017+X2018)/2)
+life_ratio<-life_ratio[,-2:-5]11
+names(life_ratio)[2:3]<-c('2015~2016','2017~2018')
+life_ratio<-gather(life_ratio,year,n,2:3)
+life_ratio$year<-gsub("X", "", life_ratio$year)
+View(life_ratio)
+life_ratio%>% ggplot(aes(x=year ,y=n, fill=항목)) + geom_bar(stat='identity',position='dodge')+labs(y="ratio")+facet_wrap('항목',scales='free')
+```
+## 박근혜 정권때 시민들의 삶의 만족도
+```{r}
+p3<-life_ratio%>%filter(year<=2016)%>%ggplot(aes(x="", y=n, fill=항목))+geom_bar(stat='identity',color=NA)+theme_void()+coord_polar("y",start=90) +geom_text(aes(label=paste0(round(n,1),'%')),position=position_stack(vjust=0.5),color='white',family='serif',size=5)+ggtitle('2015~2016 박근혜정권')
+```
+## 문제인 정권때 시민들의 삶의 만족도
+```{r}
+p4<-life_ratio%>%filter(year>2016)%>%ggplot(aes(x="", y=n, fill=항목))+geom_bar(stat='identity',color=NA)+theme_void()+coord_polar("y",start=90) +geom_text(aes(label=paste0(round(n,1),'%')),position=position_stack(vjust=0.5),color='white',family='serif',size=5)+ggtitle('2015~2016 문제인 정권')
+```
+```{r}
+grid.arrange(p3, p4, ncol=2)
+```
+
+## 2002~2019 범죄율
+```{r}
+# 2002년~ 2019년까지의 살인 발생사건 데이터 수집&정제하기  
+T_crime <- read.csv("T_검증_살인_2002-2019.csv", encoding='CP949')  
+T_crime<-T_crime%>%select('시점','데이터')
+T_crime[,2]<- gsub(",","", T_crime[,2])   
+T_crime[,2]<- as.integer(T_crime[,2])
+
+# 2002년~2019년까지의 총 인구수 데이터 수집&정제하기  
+Total_population <- read.csv("총_인구수_2002-2009.csv", encoding='CP949')  
+Total_population<-Total_population%>%select('시점','데이터')
+Total_population[,2]<- gsub(",","", Total_population[,2])  
+Total_population[,2]<- gsub("\t","", Total_population[,2])
+Total_population[,2]<- as.integer(Total_population[,2])
+T_crime1<-left_join(T_crime,Total_population,by='시점')
+names(T_crime1)[c(2,3)]<-c('범죄발생건수','총인구')  
+
+#2002-2019년도 집권 정당별 범죄율 데이터 만들기  
+T_crime1<-T_crime1%>%mutate(범죄율=(범죄발생건수/총인구)*100,000) %>% select(!'0')
+T_crime1$범죄율<- round(T_crime1$범죄율,2)
+T_crime1[T_crime1$시점==c(2002:2007,2017:2019),"집권정당"]= "진보당"
+for (i in 2008:2016){
+  T_crime1[T_crime1$시점==i,"집권정당"]= "보수당"
+}
+
+line1<-T_crime1%>%filter(집권정당=='보수당')%>%ggplot(aes(x=시점,y=범죄율))+geom_line(stat='identity',position='dodge',size=1)+ggtitle('보수집권당')+theme(axis.text.x=element_text(angle=90, hjust=1,vjust = 0.1))
+
+line2<-T_crime1%>%filter(시점<=2007)%>%ggplot(aes(x=시점,y=범죄율))+geom_line(stat='identity',position='dodge',size=1)+ggtitle('진보당1')+theme(axis.text.x=element_text(angle=90, hjust=1,vjust = 0.1))
+
+line3<-T_crime1%>%filter(시점>=2017)%>%ggplot(aes(x=시점,y=범죄율))+geom_line(stat='identity',position='dodge',size=1)+ggtitle('진보당2')+theme(axis.text.x=element_text(angle=90, hjust=1,vjust = 0.1))
+
+grid.arrange(line1,line2,line3,ncol=3)
+```
+
+## 데이터 교차분석
+## (대립)가설: 각 집권 정치 성향별로 범죄 안전도 인식 정도가 다를 것이다.
+
 ## 데이터
 ## 조사대상 : 약 27,336 표본가구의 만 13세 이상 상주 가구원
                   (1,548개 조사구, 조사구당 16~20가구)
