@@ -1,0 +1,143 @@
+---
+title: "R_t검정"
+author: "박진아"
+date: '2021 4 17 '
+output: html_document
+---
+###3.2.2. 가설_집권당(보수당, 진보당)의 정치성향이 범죄율에 영향을 미칠 것이다. - T검증  
+```{r}
+library(dplyr)
+library(tidyr)
+library(magrittr)  
+
+# 2002년~ 2019년까지의 살인 발생사건 데이터 수집&정제하기  
+T_crime <- read.csv("T_검증_살인_2002-2019.csv", encoding='CP949')  
+T_crime<-T_crime%>%select('시점','데이터')
+T_crime[,2]<- gsub(",","", T_crime[,2])   
+T_crime[,2]<- as.integer(T_crime[,2])
+
+# 2002년~2019년까지의 총 인구수 데이터 수집&정제하기  
+Total_population <- read.csv("총_인구수_2002-2009.csv", encoding='CP949')  
+Total_population<-Total_population%>%select('시점','데이터')
+Total_population[,2]<- gsub(",","", Total_population[,2])  
+Total_population[,2]<- gsub("\t","", Total_population[,2])
+Total_population[,2]<- as.integer(Total_population[,2])
+T_crime1<-left_join(T_crime,Total_population,by='시점')
+names(T_crime1)[c(2,3)]<-c('범죄발생건수','총인구')  
+
+#2002-2019년도 집권 정당별 범죄율 데이터 만들기  
+T_crime1<-T_crime1%>%mutate(범죄율=(범죄발생건수/총인구)*100,000) %>% select(!'0')
+T_crime1$범죄율<- round(T_crime1$범죄율,2)
+T_crime1[T_crime1$시점==c(2002:2007,2017:2019),"집권정당"]= "진보당"
+for (i in 2008:2016){
+  T_crime1[T_crime1$시점==i,"집권정당"]= "보수당"
+}
+T_crime1
+```
+
+#### 정규성 검정  
+
+표본크기 10~30 : 정규성 검정 후 결정  
+범죄률 샘플사이즈: 18개 
+
+H0 (귀무가설) : 정규분포를 따른다.
+H1 (대립가설) : 정규분포를 따르지 않는다.
+```{r}
+# 표본수가 2000 미만인 데이터에 적합한 shapiro-Wilks test 정규성 검정  
+shapiro.test(T_crime1$범죄율)  
+```
+<정규성 검정결과>
+P-value 값 0.5409 > 유의수준 0.05 보다 크기 때문에 귀무가설을 기각할 수 없다. 따라서 범죄율 데이터는  정규분포를 따른다는 것을 알 수 있다.
+
+#### 정규성 검정+qqplot 대각선 분포 살펴보기 
+```{r}
+qqnorm(T_crime1$범죄율); qqline(T_crime1$범죄율)
+```
+#### 분산 동질성 검증  
+H0 (귀무가설): 두 집권정당의 범죄율 분산이 같다 = 두 집권정당의 범죄율 분산비율이 1이다.  
+H1 (대립가설) : 두 집권정당의 범죄율 분산이 다르다 = 두 집권정당의 범죄율 분산비율이 1이 아니다.  
+```{r}
+var.test(범죄율~집권정당, data= T_crime1)
+```
+<분산 동질성 검정결과>  
+p-value =0.3791 >0.05, 95% 신뢰도에서 신뢰구간 [0.1181087,2.23212838]에 1이 존재한다. 따라서 두 집권정당의 범죄율 분산이 동일하다는 것을 알 수 있다. 두 집단의 분산이 같다는 가정으로 T-검증을 수행할 것이다.  
+
+#### 독립표본 T검증분석
+H0:집권당(보수당, 진보당)의 정치성향이 범죄율에 차이가 없다 = 두 집단의 평균차이가 0이다.  
+H1: 집권당(보수당, 진보당)의 정치성향이 범죄율에 차이가 있다. = 두 집단의 평균차이가 0이 아니다.  
+```{r}
+t.test(범죄율 ~ 집권정당, var.equal=TRUE, data= T_crime1)
+```
+<독립표본 T검증분석결과>    
+p-value =0.4268 >0.05이며, 95% 신뢰도에서 신뢰구간 [-0.1937625,0.4359847]에 0이 존재한다. 따라서 집권당에 따라 범죄율에 차이가 없다는 귀무가설을 기각하지 못한다. 
+
+```{r}
+#정당에 따른 범죄율 기술 통계량  
+library(psych)  
+describeBy(T_crime1$범죄율, T_crime1$집권정당)  
+
+#집단에 따른 평균 비교 도표  
+library(gplots)  
+plotmeans(범죄율 ~ 집권정당, data= T_crime1, xlab="집권 정당", 
+             ylab= "범죄율", ci.label= TRUE,n.label=FALSE,
+             mean.label= TRUE, ylim=c(3,4),
+             barwidth=5, main="집권정당에 따른 범죄율 차이",
+             digits=1, pch="*",barcol= "darkorange"
+             )
+```
+###3.2.3. 가설_집권당(보수당, 진보당)의 정치성향이 자살률에 영향을 미칠 것이다.  (단위는 10만명당)
+```{r}
+# 2002-2019년 자살률 데이터 수집&정제하기  
+suicide<-read.csv("나무위키- 자살률.csv", encoding='CP949')  
+suicide <- suicide %>%gather(Year,suicide_rate)
+suicide$Year<-gsub("X", "", suicide$Year)
+suicide <- suicide[-1,]  
+suicide$Year<- as.integer(suicide$Year)  
+suicide$suicide_rate <- as.numeric(suicide$suicide_rate)
+suicide <- suicide %>% filter(Year>=2002)
+names(suicide)[c(1,2)]<-c('년도','자살률')
+ 
+suicide[suicide$년도==c(2002:2007,2017:2019),"집권정당"]= "진보당"
+for (i in 2008:2016){
+  suicide[suicide$년도==i,"집권정당"]= "보수당"
+}
+suicide 
+```
+#### 정규성 검정  
+
+표본크기 10~30 : 정규성 검정 후 결정  
+범죄률 샘플사이즈: 18개 
+
+H0 (귀무가설) : 정규분포를 따른다.
+H1 (대립가설) : 정규분포를 따르지 않는다.
+```{r}
+# 표본수가 2000 미만인 데이터에 적합한 shapiro-Wilks test 정규성 검정  
+shapiro.test(suicide$자살률) 
+
+```
+<정규성 검정결과>
+P-value 값 0.7087 > 유의수준 0.05 보다 크기 때문에 귀무가설을 기각할 수 없다. 따라서 자살률 데이터는  정규분포를 따른다는 것을 알 수 있다.
+
+#### 정규성 검정+qqplot 대각선 분포 살펴보기 
+```{r}
+qqnorm(suicide$자살률); qqline(suicide$자살률)
+```
+#### 분산 동질성 검증  
+H0 (귀무가설): 두 집권정당의 자살률 분산이 같다 = 두 집권정당의 자살률 분산비율이 1이다.  
+H1 (대립가설) : 두 집권정당의 자살률 분산이 다르다 = 두 집권정당의 자살률 분산비율이 1이 아니다.  
+```{r}
+var.test(자살률~집권정당, data= suicide)
+```
+
+<분산 동질성 검증결과>  
+p-value =0.7052 >0.05, 95% 신뢰도에서 신뢰구간 [0.1710941 ,3.3626473]사이에 1이 존재한다. 따라서 두 집권정당의 자살률 분산이 동일하다는 것을 알 수 있다. 두 집단의 분산이 같다는 가정으로 T-검증을 수행할 것이다.  
+
+#### 독립표본 T검증분석
+H0:집권당(보수당, 진보당)의 정치성향이 자살률에 차이가 없다 = 두 집단의 평균차이가 0이다.  
+H1: 집권당(보수당, 진보당)의 정치성향이 자살률에 차이가 있다. = 두 집단의 평균차이가 0이 아니다.  
+```{r}
+t.test(자살률 ~ 집권정당, var.equal=TRUE, data= suicide)  
+```
+
+<독립표본 T검증분석결과>  
+p-value =0.001269 < 0.05이며, 95% 신뢰도에서 신뢰구간 [2.121143, 7.167746]사이에 0이 존재하지 않는다. 따라서 집권당에 따라 자살률에 차이가 없다는 대립가설을 채택할 수 있다.  
