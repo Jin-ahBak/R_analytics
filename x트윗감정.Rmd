@@ -1,0 +1,119 @@
+---
+---
+
+```{r}
+#감성분석에 필요한 패키지 
+#install.packages("plyr")
+library(plyr)
+library(tm)
+library(ggplot2)
+library(rtweet)
+library(wordcloud2)
+library(wordcloud)
+library(stringr)
+library("rJava")
+#install.packages("memorise")
+library(KoNLP)
+library(dplyr)
+#install.packages("RColorBrewer")#색상
+#install.packages("extrafont")#폰트
+library(RColorBrewer)
+library(extrafont)
+source(file = "TwitterAPIKey.R", echo = FALSE)
+
+
+#감성의 극성값 긍정 부정을 카테고리점수로 바꿔주는것
+encodeSentiment <- function(x) {
+  if(x <= -1){
+    "1) negative"
+  }else if(x >= 1){
+    "5) positive"
+  }
+}
+
+
+encodeSentiment <- function(x) {
+  if(x <= -1){
+    "1) negative"
+  
+  }else if(x >= 1){
+    "5) positive"
+  }else {
+    "3) neutral"
+  }
+}
+
+
+#트위터 #더불어민주당 긁어서 텍스트 불러오기 
+keyword1 <- enc2utf8("#더불어민주당")
+trendingTweets = search_tweets(keyword1, n=1000, lang ="ko")
+save(trendingTweets, file = "더불어.Rda")
+load("더불어.Rda")
+txt <- trendingTweets # #더불어민주당 텍스트 불러오기 
+txt<- as.data.frame(txt)
+
+#감성사전 긍정,부적 txt변수로 불러오기 
+positive <- readLines("positive.txt", encoding = "UTF-8")
+negative <- readLines("negative.txt", encoding = "UTF-8")
+
+
+
+
+
+```
+
+```{r}
+#?
+useSejongDic()
+options(mc.cores=1)
+
+
+txt <- as.character(txt$text) #text만 가져오기 
+txt<-sapply(txt,extractNoun,USE.NAMES=F)#명사추출
+txt<-unlist(txt)
+txt <-Filter(function(x){nchar(x)>=2& nchar(x)<= 6},txt)
+
+
+
+sentimental = function(sentences, positive, negative){
+  
+  scores = laply(sentences, function(sentence, positive, negative) {
+    
+    sentence = gsub('[[:punct:]]', '', sentence) # 문장부호 제거
+    sentence = gsub('[[:cntrl:]]', '', sentence) # 특수문자 제거
+    sentence = gsub('\\d+', '', sentence)        # 숫자 제거
+    
+    word.list = str_split(sentence, '\\s+')      # 공백 기준으로 단어 생성 -> \\s+ : 공백 정규식, +(1개 이상)
+    words = unlist(word.list)                    # unlist() : list를 vector 객체로 구조변경
+    
+    pos.matches = match(words, positive)           # words의 단어를 positive에서 matching
+    neg.matches = match(words, negative)
+    
+    pos.matches = !is.na(pos.matches)            # NA 제거, 위치(숫자)만 추출
+    neg.matches = !is.na(neg.matches)
+    
+    score = sum(pos.matches) - sum(neg.matches)  # 긍정 - 부정   
+    return(score)
+  }, positive, negative)
+  
+  scores.df = data.frame(score=scores, text=sentences)
+  return(scores.df)
+}
+
+result=sentimental(txt, positive, negative)
+
+
+result$score <- sapply(result$score,encodeSentiment)
+head(result)
+table(result$score)
+
+sentiment_result= table(result$score)
+
+
+pie(sentiment_result, main="감성분석 결과",
+
+    col=c("blue","green"), radius=0.8)
+
+
+
+```
