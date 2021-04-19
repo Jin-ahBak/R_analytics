@@ -22,14 +22,7 @@ library(extrafont)
 source(file = "TwitterAPIKey.R", echo = FALSE)
 
 
-#감성의 극성값 긍정 부정을 카테고리점수로 바꿔주는것
-encodeSentiment <- function(x) {
-  if(x <= -1){
-    "1) negative"
-  }else if(x >= 1){
-    "5) positive"
-  }
-}
+
 
 
 encodeSentiment <- function(x) {
@@ -39,7 +32,7 @@ encodeSentiment <- function(x) {
   }else if(x >= 1){
     "5) positive"
   }else {
-    "3) neutral"
+    NA
   }
 }
 
