@@ -5,12 +5,14 @@ date: '2021 4 18 '
 output: html_document
 ---
 ```{r}
+#감성분석에 필요한 패키지 
+#install.packages("plyr")
+library(plyr)
 library(tm)
 library(ggplot2)
 library(rtweet)
 library(wordcloud2)
 library(wordcloud)
-library(syuzhet)
 library(stringr)
 library("rJava")
 #install.packages("memorise")
@@ -21,58 +23,94 @@ library(dplyr)
 library(RColorBrewer)
 library(extrafont)
 source(file = "TwitterAPIKey.R", echo = FALSE)
+getwd()
 
-#트위터 #더불어민주당
+#감성의 극성값 긍정 부정을 카테고리점수로 바꿔주는것
+
+encodeSentiment <- function(x) {
+  if(x <= -1){
+    "1) negative"
+  
+  }else if(x >= 1){
+    "5) positive"
+  }else {
+    NA
+  }
+}
+  
+  
+#트위터 #더불어민주당 긁어서 텍스트 불러오기 
 keyword1 <- enc2utf8("#더불어민주당")
 trendingTweets = search_tweets(keyword1, n=1000, lang ="ko")
 save(trendingTweets, file = "더불어.Rda")
 load("더불어.Rda")
-length(trendingTweets)
 txt <- trendingTweets # #더불어민주당 텍스트 불러오기 
-txt_df<- as.data.frame(txt) #데이터프레임으로 변경
-head(txt_df$text)
-View(trendingTweets)
-useNIADic()#사전설정
+txt<- as.data.frame(txt)
+
+#감성사전 긍정,부적 txt변수로 불러오기 
+positive <- readLines("positive.txt", encoding = "UTF-8")
+negative <- readLines("negative.txt", encoding = "UTF-8")
+
+
+
 
 
 ```
 
 ```{r}
+#?
 useSejongDic()
 options(mc.cores=1)
 
 
-i <- 9 #첫번째 트윗으로 지정해놓고 필요없는 단어 지우기 
-txt_df$text[i]
-nohandles <- str_replace_all(txt_df$text, "@\\w+", "")
-nohandles[i]
-wordCorpus <- Corpus(VectorSource(nohandles))#코퍼스형태로 바꾸면 티맵 쓸수잇음
-wordCorpus[[i]]$content
-wordCorpus <- tm_map(wordCorpus, removeWords, c("https"))
-wordCorpus[[i]]$content
- #smart하면 더 광범위하게 지울수잇음
-wordCorpus <- tm_map(wordCorpus, removePunctuation)#티맵 패키지
-wordCorpus[[i]]$content
-wordCorpus <- tm_map(wordCorpus, removeNumbers) 
-wordCorpus[[i]]$content
-wordCorpus <- tm_map(wordCorpus, stripWhitespace)
-wordCorpus[[i]]$content
+txt <- as.character(txt$text) #text만 가져오기 
+txt<-sapply(txt,extractNoun,USE.NAMES=F)#명사추출
+txt<-unlist(txt)
+txt <-Filter(function(x){nchar(x)>=2& nchar(x)<= 6},txt)
 
 
 
-
+sentimental = function(sentences, positive, negative){
   
-tweetSentiments <- get_sentiment(content(wordCorpus), method = "syuzhet")
-get_sentiment_dictionary(dictionary = 'syuzhet')
-tweets <- cbind(txt_df, tweetSentiments)
-names(txt_df)
-names(tweets)
-tweets$sentiment <- sapply(tweets$tweetSentiments,encodeSentiment)
-head(tweets, n = 1)
+  scores = laply(sentences, function(sentence, positive, negative) {
+    
+    sentence = gsub('[[:punct:]]', '', sentence) # 문장부호 제거
+    sentence = gsub('[[:cntrl:]]', '', sentence) # 특수문자 제거
+    sentence = gsub('\\d+', '', sentence)        # 숫자 제거
+    
+    word.list = str_split(sentence, '\\s+')      # 공백 기준으로 단어 생성 -> \\s+ : 공백 정규식, +(1개 이상)
+    words = unlist(word.list)                    # unlist() : list를 vector 객체로 구조변경
+    
+    pos.matches = match(words, positive)           # words의 단어를 positive에서 matching
+    neg.matches = match(words, negative)
+    
+    pos.matches = !is.na(pos.matches)            # NA 제거, 위치(숫자)만 추출
+    neg.matches = !is.na(neg.matches)
+    
+    score = sum(pos.matches) - sum(neg.matches)  # 긍정 - 부정   
+    return(score)
+  }, positive, negative)
+  
+  scores.df = data.frame(score=scores, text=sentences)
+  return(scores.df)
+}
 
-#plot by sentiment score
-qplot(tweets$tweetSentiments) + theme(legend.position="none")+
-  xlab("Sentiment Score") +
-  ylab("Number of tweets") + 
-  ggtitle("Tweets by Sentiment Score") 
+result=sentimental(txt, positive, negative)
+
+
+result$score <- sapply(result$score,encodeSentiment)
+
+head(result)
+table(result$score)
+
+sentiment_result= table(result$score)
+
+
+pie(sentiment_result, main="감성분석 결과",
+
+    col=c("blue","green"), radius=0.8)
+
+
+
+
 ```
