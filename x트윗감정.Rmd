@@ -20,17 +20,9 @@ library(dplyr)
 library(RColorBrewer)
 library(extrafont)
 source(file = "TwitterAPIKey.R", echo = FALSE)
-
+getwd()
 
 #감성의 극성값 긍정 부정을 카테고리점수로 바꿔주는것
-encodeSentiment <- function(x) {
-  if(x <= -1){
-    "1) negative"
-  }else if(x >= 1){
-    "5) positive"
-  }
-}
-
 
 encodeSentiment <- function(x) {
   if(x <= -1){
@@ -39,11 +31,11 @@ encodeSentiment <- function(x) {
   }else if(x >= 1){
     "5) positive"
   }else {
-    "3) neutral"
+    NA
   }
 }
-
-
+  
+  
 #트위터 #더불어민주당 긁어서 텍스트 불러오기 
 keyword1 <- enc2utf8("#더불어민주당")
 trendingTweets = search_tweets(keyword1, n=1000, lang ="ko")
@@ -104,6 +96,7 @@ result=sentimental(txt, positive, negative)
 
 
 result$score <- sapply(result$score,encodeSentiment)
+
 head(result)
 table(result$score)
 
@@ -113,6 +106,7 @@ sentiment_result= table(result$score)
 pie(sentiment_result, main="감성분석 결과",
 
     col=c("blue","green"), radius=0.8)
+
 
 
 
