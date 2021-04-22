@@ -1,6 +1,9 @@
 ---
+title: "감정분석"
+author: "김유은"
+date: '2021 4 18 '
+output: html_document
 ---
-
 ```{r}
 #감성분석에 필요한 패키지 
 #install.packages("plyr")

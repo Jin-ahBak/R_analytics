@@ -1,6 +1,11 @@
 ---
+title: "감정분석"
+author: "김유은"
+date: '2021 4 18 '
+output:
+  html_document: default
+  pdf_document: default
 ---
-
 ```{r}
 #감성분석에 필요한 패키지 
 #install.packages("plyr")
@@ -14,13 +19,12 @@ library(stringr)
 library("rJava")
 #install.packages("memorise")
 library(KoNLP)
-library(dplyr)
 #install.packages("RColorBrewer")#색상
 #install.packages("extrafont")#폰트
 library(RColorBrewer)
 library(extrafont)
 source(file = "TwitterAPIKey.R", echo = FALSE)
-getwd()
+
 
 #감성의 극성값 긍정 부정을 카테고리점수로 바꿔주는것
 
@@ -44,7 +48,7 @@ load("더불어.Rda")
 txt <- trendingTweets # #더불어민주당 텍스트 불러오기 
 txt<- as.data.frame(txt)
 
-#감성사전 긍정,부적 txt변수로 불러오기 
+#감성사전 긍정,부정 txt변수로 불러오기 
 positive <- readLines("positive.txt", encoding = "UTF-8")
 negative <- readLines("negative.txt", encoding = "UTF-8")
 
@@ -67,13 +71,14 @@ txt <-Filter(function(x){nchar(x)>=2& nchar(x)<= 6},txt)
 
 
 
-sentimental = function(sentences, positive, negative){
+sentimental <- function(sentences, positive, negative){
   
   scores = laply(sentences, function(sentence, positive, negative) {
     
     sentence = gsub('[[:punct:]]', '', sentence) # 문장부호 제거
     sentence = gsub('[[:cntrl:]]', '', sentence) # 특수문자 제거
     sentence = gsub('\\d+', '', sentence)        # 숫자 제거
+     sentence = gsub('#', '', sentence)
     
     word.list = str_split(sentence, '\\s+')      # 공백 기준으로 단어 생성 -> \\s+ : 공백 정규식, +(1개 이상)
     words = unlist(word.list)                    # unlist() : list를 vector 객체로 구조변경
@@ -109,5 +114,66 @@ pie(sentiment_result, main="감성분석 결과",
 
 
 
-
 ```
+
+
+```{r}
+keyword2 <- enc2utf8("#국민의힘")
+keyword2 = search_tweets(keyword2, n=18000, lang ="ko")
+save(keyword2, file = "국힘.Rda")
+
+
+#데이터 불러오기 
+con1 <- keyword2 # #국민의힘 텍스트 불러오기 
+con1_df<- as.data.frame(con1) #데이터프레임으로 변경
+
+#트윗 결과 중 텍스트 부분만 추출 ***
+t_con1 <- as.character(con1_df$text) #text만 가져오기 
+t_con1<-sapply(t_con1,extractNoun,USE.NAMES=F)#명사추출
+t_con1<-unlist(t_con1)
+t_con1 <-Filter(function(x){nchar(x)>=2& nchar(x)<= 6},t_con1) #두 글자 이상 단어만 뽑아내기
+
+
+
+
+con_sentiment <- function(sentences, positive, negative){
+  
+  scores = laply(sentences, function(sentence, positive, negative) {
+    
+    sentence = gsub('[[:punct:]]', '', sentence) # 문장부호 제거
+    sentence = gsub('[[:cntrl:]]', '', sentence) # 특수문자 제거
+    sentence = gsub('\\d+', '', sentence)        # 숫자 제거
+     sentence = gsub('#', '', sentence)
+    
+    word.list = str_split(sentence, '\\s+')      # 공백 기준으로 단어 생성 -> \\s+ : 공백 정규식, +(1개 이상)
+    words = unlist(word.list)                    # unlist() : list를 vector 객체로 구조변경
+    
+    pos.matches = match(words, positive)           # words의 단어를 positive에서 matching
+    neg.matches = match(words, negative)
+    
+    pos.matches = !is.na(pos.matches)            # NA 제거, 위치(숫자)만 추출
+    neg.matches = !is.na(neg.matches)
+    
+    score = sum(pos.matches) - sum(neg.matches)  # 긍정 - 부정   
+    return(score)
+  }, positive, negative)
+  
+  scores.df = data.frame(score=scores, text=sentences)
+  return(scores.df)
+}
+
+result2 <- con_sentiment(t_con1, positive, negative)
+
+
+result2$score <- sapply(result2$score,encodeSentiment)
+
+head(result2)
+table(result2$score)
+
+con_t <- table(result2$score)
+
+
+pie(con_t, main="감성분석 결과",
+
+    col=c("red","blue"), radius=0.8)
+
