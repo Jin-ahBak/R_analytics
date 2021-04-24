@@ -359,6 +359,7 @@ wordcloud2(wordDf, color= pal,fontFamily="NanumGothic")
 ```
 
 ####국민의힘 워드클라우드 
+위와 같은 방식으로 #국민의힘도 작업을 해주었습니다.
 ```{r}
 keyword2 <- enc2utf8("#국민의힘")
 keyword2 = search_tweets(keyword2, n=10000, lang ="ko")
@@ -413,9 +414,10 @@ wordcloud(words=wordDf2$word,freq=wordDf2$freq,max.word=200,colors=pal)
 
 ## 감성분석
 
+### 
 ```{r}
 
-#감성의 극성값 긍정,부정을 카테고리 점수화
+#감성의 긍정,부정을 카테고리 점수화
 encodeSentiment <- function(x) {
   if(x <= -1){
     "1) negative"
@@ -484,6 +486,7 @@ pie(sentiment_result, main="진보 감성분석 결과",
 ```
 
 #### 국민의 힘 감정분석 
+위와 같은 방식으로 국민의힘도 작업을 해주었습니다.
 ```{r}
 
 con1 <-con1_df$text
