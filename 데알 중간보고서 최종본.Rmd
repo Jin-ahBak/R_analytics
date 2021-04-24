@@ -5,6 +5,8 @@ date: '2021 4 24 '
 output: html_document
 ---
 
+
+
 - 필요한 라이브러리 불러오기
 ```{r}
 #install.packages("gridExtra") <- 서로 다른 표를 한 그림에 볼 수 있게 해주는 패키지
