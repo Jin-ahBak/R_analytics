@@ -2,8 +2,11 @@
 title: "untitled"
 author: "ddd"
 date: '2021 4 24 '
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
+
 
 - 필요한 라이브러리 불러오기
 ```{r}
