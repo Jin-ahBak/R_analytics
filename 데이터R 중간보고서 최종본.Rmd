@@ -409,7 +409,6 @@ wordDf2 <- data.frame( word = names(x = wordFreq2),freq = wordFreq2,row.names = 
 set.seed(500)
 pal <- brewer.pal(8,"Dark2") #팔레트 정하기
 wordcloud(words=wordDf2$word,freq=wordDf2$freq,max.word=200,colors=pal)
-
 ```
 
 ## 감성분석
