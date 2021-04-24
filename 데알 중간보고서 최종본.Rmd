@@ -269,6 +269,265 @@ axis.labels = c('매우만족','약간 만족','보통','약간 불만족','매�
 legend.title = "집권당",
 legend.labels = c('2015~2016 박근혜 정권','2017~2018 문제인 정권'))
 ```
+### 트위터 분석 -워드클라우드, 감정분석
+
+```{r}
+#install.packages("plyr")
+library(rtweet)
+library(plyr) #laply함수 apply함수 확장,분석하기 쉬운 형태로 나누어 다시 새로운 형태로 만들어줌 
+library(tm)
+library(ggplot2)
+library(wordcloud2)
+library(wordcloud)
+library(stringr)
+library(KoNLP)
+library(RColorBrewer)
+library(extrafont)
+source(file = "TwitterAPIKey.R", echo = FALSE)
+```
+
+
+##워드클라우드
+
+#### 더불어민주당 워드클라우드
+```{r}
+#트위터에서 #더불어민주당  텍스트로 불러오기
+
+#해시태그 단어 긁어오기 
+keyword1 <- enc2utf8("#더불어민주당")
+party1 = search_tweets(keyword1, n=10000, lang ="ko")
+save(party1, file = "더불어.Rda")
+load("더불어.Rda")
+# #더불어 민주당 텍스트 불러오기
+txt <- party1  
+#class(txt)
+t_txt1 <- as.data.frame(txt)
+head(t_txt1$text)
+
+useNIADic()#사전설정
+useSejongDic()
+
+#트윗 결과 중 텍스트 부분만 추출 ***
+t_txt1 <- as.character(t_txt1) #text만 가져오기 
+t_txt1 <-sapply(t_txt1,extractNoun,USE.NAMES=F)#명사추출
+t_txt1 <-unlist(t_txt1)
+
+#두 글자 이상 단어만 뽑아내기
+t_txt1 <-Filter(function(x){nchar(x)>=2& nchar(x)<= 6},t_txt1) 
+
+
+
+#필요없는 단어 제거 
+t_txt1 <-gsub("http","",t_txt1)
+t_txt1 <-gsub("제원","",t_txt1)
+t_txt1 <-gsub("막둥","",t_txt1)
+t_txt1 <-gsub("\"<U+032E>","",t_txt1)
+t_txt1 <-gsub("야근","",t_txt1)
+t_txt1 <-gsub("후원금","",t_txt1)
+t_txt1 <-gsub("홍영표","",t_txt1)
+
+
+nohandles <- str_replace_all(t_txt1, "#\\w+", "")
+wordCorpus <- Corpus(VectorSource(nohandles))
+wordCorpus <- tm_map(wordCorpus,removePunctuation)#문장부호제거
+wordCorpus <- tm_map(wordCorpus,removeNumbers) #숫자제거
+wordCorpus <- tm_map(wordCorpus, stripWhitespace) #두칸 빈칸 없애기
+
+wc1 <- DocumentTermMatrix(wordCorpus)
+
+# wc1 를 matrix로 변환해서 열 합계를 구하기
+wc1 %>% as.matrix() %>% colSums()-> wordFreq
+#내림차순 정렬
+wordFreq <- wordFreq[order(wordFreq, decreasing = TRUE)]
+head(x = wordFreq, n = 20)
+
+#데이터프레임으로 변경
+wordDf <- data.frame( word = names(x = wordFreq),
+                              freq = wordFreq,
+                              row.names = NULL) %>% arrange(desc(x = freq))
+
+# 워드클라우드로 나타내기 
+pal <- brewer.pal(10,"Set3") #팔레트 정하기
+set.seed(500)
+wordcloud2(wordDf, color= pal,fontFamily="NanumGothic")
+
+
+```
+
+####국민의힘 워드클라우드 
+```{r}
+keyword2 <- enc2utf8("#국민의힘")
+keyword2 = search_tweets(keyword2, n=10000, lang ="ko")
+save(keyword2, file = "국힘.Rda")
+
+
+#데이터 불러오기 
+con1 <- keyword2 # #국민의힘 텍스트 불러오기 
+con1_df<- as.data.frame(con1) #데이터프레임으로 변경
+
+#트윗 결과 중 텍스트 부분만 추출 
+t_con1 <- as.character(con1_df$text) #text만 가져오기 
+t_con1<-sapply(t_con1,extractNoun,USE.NAMES=F)#명사추출
+t_con1<-unlist(t_con1)
+t_con1 <-Filter(function(x){nchar(x)>=2& nchar(x)<= 6},t_con1) #두 글자 이상 단어만 뽑아내기
+
+#필요없는 단어 제거 
+t_con1 <-gsub("<U+200B>","",t_con1)
+t_con1 <-gsub("https","",t_con1)
+t_con1 <-gsub("네이버","",t_con1)
+t_con1 <-gsub("블로그","",t_con1)
+t_con1 <-gsub("를","",t_con1)
+t_con1 <-gsub("'","",t_con1)
+
+i <- 9 #첫번째 트윗으로 지정해놓고 필요없는 단어 지우기 
+t_con1[i]
+nohandles2 <- str_replace_all(t_con1, "#\\w+", "")
+wordCorpus2 <- Corpus(VectorSource(nohandles2))
+wordCorpus2 <- tm_map(wordCorpus2,removePunctuation)#문장부호제거
+wordCorpus2 <- tm_map(wordCorpus2,removeNumbers) #숫자제거
+
+wordCorpus2 <- tm_map(wordCorpus2, stripWhitespace) #두칸 빈칸 없애기
+
+
+
+wc2<- DocumentTermMatrix(wordCorpus2)
+
+# wc2 를 matrix로 변환해서 열 합계를 구하기
+wc2 %>% as.matrix() %>% colSums()-> wordFreq2
+#내림차순 정렬
+wordFreq2 <- wordFreq2[order(wordFreq2, decreasing = TRUE)]
+head(x = wordFreq2, n = 20)
+
+#데이터프레임으로 변경
+
+wordDf2 <- data.frame( word = names(x = wordFreq2),freq = wordFreq2,row.names = NULL)
+set.seed(500)
+pal <- brewer.pal(8,"Dark2") #팔레트 정하기
+wordcloud(words=wordDf2$word,freq=wordDf2$freq,max.word=200,colors=pal)
+
+```
+
+## 감정분석
+#### 준비 
+```{r}
+
+#감성의 극성값 긍정,부정을 카테고리 점수화
+encodeSentiment <- function(x) {
+  if(x <= -1){
+    "1) negative"
+  
+  }else if(x >= 1){
+    "5) positive"
+  }else {
+    NA #긍정,부정 외 
+  }
+}
+```  
+
+```{r}
+
+#깃허브 군산대 감성사전 사용
+#감성사전에서 가져온 positive와 negative를 변수에 불러오기
+positive <- readLines("positive.txt", encoding = "UTF-8")
+negative <- readLines("negative.txt", encoding = "UTF-8")
+
+
+```
+
+#### 더불어 민주당 감정분석 
+```{r}
+
+txt <- as.data.frame(txt)
+txt<- txt$text
+sentimental <- function(sentences, positive, negative){
+  
+  scores = laply(sentences, function(sentence, positive, negative) {
+    
+    sentence = gsub('[[:punct:]]', '', sentence) # 문장부호 제거
+    sentence = gsub('[[:cntrl:]]', '', sentence) # 특수문자 제거
+    sentence = gsub('\\d+', '', sentence)        # 숫자 제거
+     sentence = gsub('#', '', sentence)
+    
+    word.list = str_split(sentence, '\\s+') #공백 기준 단어 분리
+    words = unlist(word.list)  #  list를 vector 객체로 변경
+    
+    #words가 사전단어에 매치 되는지 검사           
+    pos.matches = match(words, positive) #문자열 일치 여부 
+    neg.matches = match(words, negative)
+    
+    #결측값 제거 match되는 데이터만 추출
+    pos.matches = !is.na(pos.matches)           
+    neg.matches = !is.na(neg.matches)
+    
+    score = sum(pos.matches) - sum(neg.matches)  # 긍정 - 부정   
+    return(score)
+  }, positive, negative)
+  
+  scores.df = data.frame(score=scores, text=sentences)
+  return(scores.df)
+}
+
+
+result <-sentimental(txt, positive, negative)
+
+result$score <- sapply(result$score,encodeSentiment)
+
+table(result$score)
+
+sentiment_result= table(result$score)
+
+pie(sentiment_result, main="감성분석 결과",
+
+    col=heat.colors(2), radius=0.8)
+
+
+```
+
+#### 국민의 힘 감정분석 
+```{r}
+
+con1 <-con1_df$text
+
+con_sentiment <- function(sentences, positive, negative){
+  
+  scores = laply(sentences, function(sentence, positive, negative) {
+    
+    sentence = gsub('[[:punct:]]', '', sentence) 
+    sentence = gsub('[[:cntrl:]]', '', sentence) 
+    sentence = gsub('\\d+', '', sentence)     
+     sentence = gsub('#', '', sentence)
+    
+    word.list = str_split(sentence, '\\s+')     
+    words = unlist(word.list)                    
+    
+    pos.matches = match(words, positive)    
+    neg.matches = match(words, negative)
+    
+    pos.matches = !is.na(pos.matches)   
+    neg.matches = !is.na(neg.matches)
+    
+    score = sum(pos.matches) - sum(neg.matches)    
+    return(score)
+  }, positive, negative)
+  
+  scores.df = data.frame(score=scores, text=sentences)
+  return(scores.df)
+}
+
+result2 <- con_sentiment(con1, positive, negative)
+head(result2$score)
+
+result2$score <- sapply(result2$score,encodeSentiment)
+
+table(result2$score)
+
+con_t <- table(result2$score)
+
+
+pie(con_t, main="감성분석 결과",
+
+    col=heat.colors(2), radius=0.8)
+```
 
 
 ## 아노바 데이터 전처리
