@@ -530,6 +530,7 @@ con_t <- table(result2$score)
 pie(con_t, main="보수 감성분석 결과",
 
     col=heat.colors(2), radius=0.8)
+
 ```
 
 ### 3.2.2. T검증  
