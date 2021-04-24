@@ -558,3 +558,26 @@ str(핵심_데이터$data.factor)
 # 범죄율 종속변수는 핵심_데이터$_data 사용하면 될듯../?
 ```
 
+# 기술통계 
+#### psych패키지 이용한 집단별 평균값구하기
+```{r}
+#install.packages("psych")
+library(psych)
+describeBy(핵심_데이터$범죄_data,핵심_데이터$data.factor)
+```
+
+#### sjplot 분산분석 그래프 
+```{r}
+#진보 성향에 따른 지역 자살율
+library(sjPlot)
+set_theme(axis.textsize = 1.2,geom.label.size = 4.5)
+sjp.aov1(핵심_데이터$자살_data,핵심_데이터$data.factor,geom.size=1.5,wrap.labels =7,axis.lim =c(15,40),meansums=T,show.summary=T,show.p=F,title="진보성향에 따른 지역 자살율",axis.labels = c("낮다","중간","높다"))
+```
+
+```{r}
+#진보 성향에 따른 범죄
+set_theme(axis.textsize = 1.2,geom.label.size = 4.5)
+sjp.aov1(핵심_데이터$범죄_data,핵심_데이터$data.factor,geom.size=1.5,wrap.labels =7,axis.lim=c(3717,442902),meansums=T,show.summary=T,show.p=F,title="진보성향에 따른 지역 범죄",axis.labels = c("낮다","중간","높다"))
+```
+
+
