@@ -413,8 +413,6 @@ wordcloud(words=wordDf2$word,freq=wordDf2$freq,max.word=200,colors=pal)
 ```
 
 ## 감성분석
-
-### 
 ```{r}
 
 #감성의 긍정,부정을 카테고리 점수화
