@@ -482,8 +482,8 @@ sentiment_result <- table(result$score)
 pie(sentiment_result, main="진보 감성분석 결과",
 
     col=heat.colors(2), radius=0.8)
-
 ```
+파이차트 결과 진보의 경우 긍정단어가 비중이 높게 나왔다.
 
 #### 국민의 힘 감정분석 
 위와 같은 방식으로 국민의힘도 작업을 해주었습니다.
@@ -532,7 +532,7 @@ pie(con_t, main="보수 감성분석 결과",
     col=heat.colors(2), radius=0.8)
 
 ```
-
+파이차트 결과 보수는 부정단어의 비중이 더 높게 나왔다. 
 ### 3.2.2. T검증  
 
 ### 가설_집권당(보수당, 진보당)의 정치성향이 범죄율에 영향을 미칠 것이다.   
