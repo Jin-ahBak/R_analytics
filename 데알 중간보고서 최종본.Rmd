@@ -279,9 +279,16 @@ library(ggplot2)
 library(wordcloud2)
 library(wordcloud)
 library(stringr)
-library(KoNLP)
 library(RColorBrewer)
 library(extrafont)
+#KONLP패키지 설치
+#install.packages("rJava")
+#install.packages("memoise")
+#install.packages("multilinguer")
+#install.packages(c('stringr','hash','tau','Sejong', "RSQLite", "devtools"),type = "binary")
+#install.packages("remotes")
+#remotes::install_github('haven-jeon/KoNLP',upgrade = "never",INSTALL_opts=c("--no-multiarch"))
+library(KoNLP)
 source(file = "TwitterAPIKey.R", echo = FALSE)
 ```
 
