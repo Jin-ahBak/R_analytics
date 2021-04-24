@@ -30,7 +30,7 @@ source(file = "TwitterAPIKey.R", echo = FALSE)
 
 #해시태그 단어 긁어오기 
 keyword1 <- enc2utf8("#더불어민주당")
-party1 = search_tweets(keyword1, n=15000, lang ="ko")
+party1 = search_tweets(keyword1, n=10000, lang ="ko")
 save(party1, file = "더불어.Rda")
 load("더불어.Rda")
 # #더불어 민주당 텍스트 불러오기
@@ -92,7 +92,7 @@ wordcloud2(wordDf, color= pal,fontFamily="NanumGothic")
 #국민의힘 워드클라우드 
 
 keyword2 <- enc2utf8("#국민의힘")
-keyword2 = search_tweets(keyword2, n=15000, lang ="ko")
+keyword2 = search_tweets(keyword2, n=10000, lang ="ko")
 save(keyword2, file = "국힘.Rda")
 
 
@@ -144,7 +144,6 @@ wordcloud(words=wordDf2$word,freq=wordDf2$freq,max.word=200,colors=pal)
 
 ## 감정분석
 ```{r}
-
 
 # 감정분석 
 
