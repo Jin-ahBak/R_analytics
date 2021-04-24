@@ -1,0 +1,302 @@
+---
+title: "untitled"
+author: "ddd"
+date: '2021 4 24 '
+output: html_document
+---
+
+
+
+- 필요한 라이브러리 불러오기
+```{r}
+#install.packages("gridExtra") <- 서로 다른 표를 한 그림에 볼 수 있게 해주는 패키지
+library(gridExtra)
+#install.packages('sjPlot')
+library(sjPlot)
+library(dplyr)
+library(tibble)
+library(gmodels)
+library(ggplot2)
+library(tidyr)
+```
+
+## 3. 데이터 분석 및 시각화
+  - 3.1  기술통계
+    - 3.1.1 사회 범죄 안전 인식도와 삶의 만족도 
+    - 3.1.2 각 정권에 따른 범죄율과 자살률  
+
+- 우리나라 대통령 임기
+
+| 대통령 | 임기년도  | 정당(바뀐 정당 이름) | 정치성향 |
+| ------ | --------- | -------------------- | -------- |
+| 김대중 | 1998~2003 | 더불어 민주당        | 진보     |
+| 노무현 | 2003~2008 | 더불어 민주당        | 진보     |
+| 이명박 | 2008~2013 | 국민의 힘            | 보수     |
+| 박근혜 | 2013~2017 | 국민의 힘            | 보수     |
+| 문재인 | 2017~     | 더불어 민주당        | 진보     |
+
+ ### 3.1.1 사회 범죄 안전 인식도와 삶의 만족도 
+**통계청 데이터**
+- 데이터: 사회 안전에 대한 인식도(범죄), 삶의 만족도
+- 조사대상 : 약 27,336 표본가구의 만 13세 이상 상주 **가구원** (1,548개 조사구, 조사구당 16~20가구)
+- 일반 조사구 중 조사가 어려운 섬지역과 기숙시설, 특수사회시설은 제외
+- 표본추출틀의 포함률은 조사모집단 대비 전국 기준 조사구 99.8% 수준임
+
+#### 각 정당이 집권한 연도에 따른 우리나라 국민들의 사회범죄 안전에 대한 인식도
+- 대통령 1년 임기는 대통령 정치성향에 따른 사회변화가 뚜렷하지 않을 것이라 예상돼 2개년도 데이터를 가지고 비교해보았다. 
+- 2015~2016: 박근혜 정권(국민의 힘)
+- 2017~2018: 문재인 정권(더불어 민주당)
+```{r}
+think_ratio<-read.csv('사회안전에_대한_인식도_범죄__13세_이상_인구__20210417014140.csv')%>%gather(year,인식도,2:3)
+think_ratio$year<-gsub("X", "", think_ratio$year,)
+think_ratio$year[think_ratio$year==2016]<-'2015~2016'
+think_ratio$year[think_ratio$year==2018]<-'2017~2018'
+View(think_ratio)
+think_ratio%>% ggplot(aes(x=year ,y=인식도, fill=항목)) + geom_bar(stat='identity',position='dodge')+labs(y="ratio")+facet_wrap('항목',scales='free')
+```  
+- 우리나라 국민들은 정권 집권 성향이 진보일때 사회 범죄 안전도에 있어 대체적으로 안전하다고 느낀다. 2015~2016(박근혜 정권-보수),2017~2018(문재인 정권-진보)를 비교했을때 매우안전하다고 느낀 비율이 2017~2018년도가 2015~2016년도의 2배정도로 매우 큰 차이를 보이며, 이외에 비교적 안전과 보통 항목에서도 진보가 값이 더 크게 나왔다.  
+
+- (박근혜 정권-보수) 국민들의 사회 범죄 안전도에 대한 인식
+```{r}
+# ggplot을 이용해 파이차트 만들기
+p1<-think_ratio%>%filter(year<=2016)%>%ggplot(aes(x="", y=인식도, fill=항목))+geom_bar(stat='identity',color=NA)+theme_void()+coord_polar("y",start=90) +geom_text(aes(label=paste0(round(인식도,1),'%')),position=position_stack(vjust=0.5),color='white',family='serif',size=5)+ggtitle('2016 박근혜정권-보수')
+```
+- (문제인 정권-진보) 국민들의 사회 범죄 안전도에 대한 인식
+```{r}
+p2<-think_ratio%>%filter(year>2016)%>%ggplot(aes(x="", y=인식도, fill=항목))+geom_bar(stat='identity',color=NA)+theme_void()+coord_polar("y",start=90) +geom_text(aes(label=paste0(round(인식도,1),'%')),position=position_stack(vjust=0.5),color='white',family='serif',size=5)+ggtitle('2018 문재인 정권-진보')
+```
+
+```{r}
+# 박근혜 정권 파이차트와 문재인 정권 파이차트 비교하기
+grid.arrange(p1, p2, ncol=2)
+```  
+- 각 집권 년도에 따른 국민들의 사회 범죄 안전 인식도를 비교해봤을때, 2015~2016 박근혜 정권-보수일때 '비교적 안전하지 않음'과 '매우 안전하지 않음' 비율의 합이 전체의 67.1%, 절반이상으로 상당히 높은 편이다. 이는 박근혜 정권때 국민들이 사회 범죄에있어 불안감이 높았었음을 예상할 수 있다. 반면에 2017~2018 문재인 정권-진보일때 비교적 안전하지 않음과 매우 안전하지 않음의 합은 50.8%, 절반은 넘지만 박근혜 정권-보수과 비교했을떄 국민들의 불안감이 대체적으로 낮은 양상이고, 사회 범죄에 있어 안전하게 느꼈다고 예상해볼 수 있다.  
+
+#### 각 정당이 집권한 연도에 따른 국민들의 삶의 만족도
+```{r}
+life_ratio<-read.csv('삶의_만족도_시도__20210417030538.csv')%>%mutate((X2015+X2016)/2)%>%mutate((X2017+X2018)/2)
+life_ratio<-life_ratio[,-2:-5]
+names(life_ratio)[2:3]<-c('2015~2016','2017~2018')
+life_ratio<-gather(life_ratio,year,n,2:3)
+life_ratio$year<-gsub("X", "", life_ratio$year)
+View(life_ratio)
+life_ratio%>% ggplot(aes(x=year ,y=n, fill=항목)) + geom_bar(stat='identity',position='dodge')+labs(y="ratio")+facet_wrap('항목',scales='free')
+```  
+- 국민들의 삶의 만족도는 2015~2016 박근혜 정권-보수때 매우 만족이 2017~2018 문재인 정권-진보에 비해 높다. 또한 문재인 정권-진보 데이터를 보면 보통과 약간만족에 있어서 박근혜 정권-보수와 큰 차이는 없지만 매우 불만족과 약간 불만족 항목에서 더 높은 값을 가지고 있어 문재인 정권_진보때 국민들의 삶의 만족도가 대체적으로 낮음을 확인할 수 있었다.
+
+
+- 2015~2016 박근혜 정권-보수 국민들의 삶의 만족도
+```{r}
+p3<-life_ratio%>%filter(year<=2016)%>%ggplot(aes(x="", y=n, fill=항목))+geom_bar(stat='identity',color=NA)+theme_void()+coord_polar("y",start=90) +geom_text(aes(label=paste0(round(n,1),'%')),position=position_stack(vjust=0.5),color='white',family='serif',size=5)+ggtitle('2015~2016 박근혜정권')
+```
+- 2017~2018 문재인 정권-진보 국민들의 삶의 만족도
+```{r}
+p4<-life_ratio%>%filter(year>2016)%>%ggplot(aes(x="", y=n, fill=항목))+geom_bar(stat='identity',color=NA)+theme_void()+coord_polar("y",start=90) +geom_text(aes(label=paste0(round(n,1),'%')),position=position_stack(vjust=0.5),color='white',family='serif',size=5)+ggtitle('2017~2018 문재인')
+```
+```{r}
+# 박근혜 정권 파이차트와 문재인 정권 파이차트 비교하기
+grid.arrange(p3, p4, ncol=2)
+```  
+- 박근혜 정권(보수)과 문재인 정권(진보)의 데이터를 비교해보면 큰 차이는 없지만, 삶의 만족도에 있어 긍정적인 수치는 박근혜 정권이 문재인 정권보다 더 높았고, 부정적인 수치는 문재인 정권이 더 높은 양상을 띄고 있다.
+
+##### 집권 정치 성향별 국민들의 사회범죄 안전 인식도에 대한 인식과 삶의 만족도 데이터 분석 결과 
+- 각각 정권의 사회 범죄 안전 인식도와 삶의 만족도를 비교했을때, 사회 범죄 안전인식도에 있어서 문재인 정권-진보가 안전 인식도에 대해 더 높은 긍정적인 수치를 가지고 있었고, 반대로 삶의 만족도에 있어서 박근혜 정권-보수가 만족도에 대해 높은 긍적적인 수치를 가지고 있다. 이를 통해 사회 범죄 안전 인식도가 국민들의 삶의 만족도에 영향을 주는 강력한 지표가 아닌 것을 예상할 수 있었다.
+
+### 3.1.2 각 정권에 따른 범죄율과 자살률  
+
+ 앞선 기술통계 결과를 통해 어떤 정권이 집권했냐에 따라 국민들의 사회 범죄 안전 인식도와 삶의 만족도의 수치의 차이가 있음을 알 수 있다. 하지만 이 각각의 지표들이 정권의 정치성향에 의해 영향을 받아 수치의 차이가 발생했다고 말할 수 없다. 그렇기에 국민들의 사회 범죄 안전 인식도에 영향을 주는 각 범죄율(범죄발생건수 비율)과 삶의 만족도에 영향을 주는 자살률의 데이터를 각 집권 정당에 맞추어 분류해 각 정권에 따른 범죄율과 자살률의 변화양상을 살펴보았다.
+
+#### 2002~2019 범죄율
+-2002~20019년까지의 데이터를 이용해 집권 정당별 범죄율과 변화양상 살펴보기
+```{r}
+# 2002년~ 2019년까지의 살인 발생사건 데이터 수집&정제하기  
+T_crime <- read.csv("T_검증_범죄_2002-2019.csv", encoding='CP949')  
+T_crime<-T_crime%>%select('시점','데이터')
+T_crime[,2]<- gsub(",","", T_crime[,2])   
+T_crime[,2]<- as.integer(T_crime[,2])
+
+# 2002년~2019년까지의 총 인구수 데이터 수집&정제하기  
+Total_population <- read.csv("총_인구수_2002-2009.csv", encoding='CP949')  
+Total_population<-Total_population%>%select('시점','데이터')
+Total_population[,2]<- gsub(",","", Total_population[,2])  
+Total_population[,2]<- gsub("\t","", Total_population[,2])
+Total_population[,2]<- as.integer(Total_population[,2])
+T_crime1<-left_join(T_crime,Total_population,by='시점')
+names(T_crime1)[c(2,3)]<-c('범죄발생건수','총인구')  
+
+#2002-2019년도 집권 정당별 범죄율 데이터 만들기  
+T_crime1<-T_crime1%>%mutate(범죄율=(범죄발생건수/총인구)*100,000) %>% select(!'0')
+T_crime1$범죄율<- round(T_crime1$범죄율,2)
+T_crime1[T_crime1$시점==c(2002:2007,2017:2019),"집권정당"]= "진보당"
+for (i in 2008:2016){
+  T_crime1[T_crime1$시점==i,"집권정당"]= "보수당"
+}
+crime_graph<-T_crime1%>%ggplot(aes(x=시점,y=범죄율))+geom_line(stat='identity',position='dodge',size=1)+theme(axis.text.x=element_text(angle=90, hjust=1,vjust = 0.1))+geom_vline(xintercept =(시점=c(2007,2016)), color =  "red", linetype = 2)+annotate("text", x=2004, y=4.2, label="진보당1", size=7)+annotate("text", x=2011, y=4.2, label="보수당", size=7) +annotate("text", x=2018, y=4.2, label="진보당2", size=7)
+
+
+```
+```{r}
+line1<-T_crime1%>%filter(집권정당=='보수당')%>%ggplot(aes(x=시점,y=범죄율))+geom_line(stat='identity',position='dodge',size=1)+ggtitle('보수')+theme(axis.text.x=element_text(angle=90, hjust=1,vjust = 0.1))
+
+line2<-T_crime1%>%filter(시점<=2007)%>%ggplot(aes(x=시점,y=범죄율))+geom_line(stat='identity',position='dodge',size=1)+ggtitle('진보1')+theme(axis.text.x=element_text(angle=90, hjust=1,vjust = 0.1))
+
+line3<-T_crime1%>%filter(시점>=2017)%>%ggplot(aes(x=시점,y=범죄율))+geom_line(stat='identity',position='dodge',size=1)+ggtitle('진보2')+theme(axis.text.x=element_text(angle=90, hjust=1,vjust = 0.1))
+# 진보 그래프가 진보1과 진보2로 나뉜 이유는 2002~2019까지 데이터 시점에서 진보가 집권한 년도는 2002~2007,2017~2019, 이 사이에 보수정권 2008~2016이 들어가 있어 시계열 데이터로 만들기 위해 진보1,진보2로 나누어 그래프를 그렸다.
+grid.arrange(line1,line2,line3,ncol=3)
+
+```
+- 
+
+## 2002~2019 자살율
+-2002~20019년까지의 데이터를 이용해 집권 정당별 자살율과 변화양상 살펴보기
+```{r}
+suicide<-read.csv("나무위키- 자살률.csv", encoding='CP949')  
+suicide <- suicide %>%gather(Year,suicide_rate)
+suicide$Year<-gsub("X", "", suicide$Year)
+suicide <- suicide[-1,]  
+suicide$Year<- as.integer(suicide$Year)  
+suicide$suicide_rate <- as.numeric(suicide$suicide_rate)
+suicide <- suicide %>% filter(Year>=2002)
+names(suicide)[c(1,2)]<-c('년도','자살률')
+ 
+suicide[suicide$년도==c(2002:2007,2017:2019),"집권정당"]= "진보당"
+for (i in 2008:2016){
+  suicide[suicide$년도==i,"집권정당"]= "보수당"
+}
+View(suicide)
+
+
+part1<-suicide%>%filter(집권정당=='보수당')%>%ggplot(aes(x=년도,y=자살률))+geom_line(stat='identity',position='dodge',size=1)+ggtitle('보수당')+theme(axis.text.x=element_text(angle=90, hjust=1,vjust = 0.1))
+
+part2<-suicide%>%filter(년도<=2007)%>%ggplot(aes(x=년도,y=자살률))+geom_line(stat='identity',position='dodge',size=1)+ggtitle('진보당1')+theme(axis.text.x=element_text(angle=90, hjust=1,vjust = 0.1))
+
+part3<-suicide%>%filter(년도>=2017)%>%ggplot(aes(x=년도,y=자살률))+geom_line(stat='identity',position='dodge',size=1)+ggtitle('진보당2')+theme(axis.text.x=element_text(angle=90, hjust=1,vjust = 0.1))
+
+grid.arrange(part1,part2,part3,ncol=3)
+
+```
+
+
+
+## 데이터 교차분석
+## 귀무가설:  각 집권 정치 성향별로 국민들의 사회범죄 안전도에 대한 인식 정도가 같은 것이다.
+## (대립)가설: 각 집권 정치 성향별로 국민들의 사회범죄 안전도에 대한 인식 정도가 다를 것이다.
+
+```{r}
+think<-read.csv('사회안전에_대한_인식도_범죄__13세_이상_인구__20210417014140.csv')%>%mutate((X2016/100)*27336)%>%mutate((X2018/100)*27336)%>%column_to_rownames(var='항목')
+think<-think[,c(-1,-2)]
+names(think)<-c('2015~2016 박근혜 정권','2017~2018 문제인 정권')
+View(think)
+print(fit.fis<-CrossTable(as.matrix(think),expected=T,chisq=T,prop.c = F,prop.r =F,prop.chisq = F,prop.t = F ))
+
+```
+```{r}
+think1<-read.csv('사회안전에_대한_인식도_범죄__13세_이상_인구__20210417014140.csv')%>%column_to_rownames(var='항목')
+names(think1)<-c('2015~2016 박근혜 정권','2017~2018 문제인 정권')
+View(think1)
+
+print(fit.fis<-CrossTable(as.matrix(think1),expected=T,chisq=T,prop.c = F,prop.r =F,prop.chisq = F,prop.t = F ))
+```
+
+
+```{r}
+rep.row<-function(x,n){
+m <- matrix(rep(x,each=n),nrow=n)
+return(m)
+}
+think_g<- data.frame(rbind(rep.row(c("2015~2016 박근혜 정권", "매우 안전"), 246),
+  rep.row(c("2015~2016 박근혜 정권", "비교적 안전"), 2268),
+  rep.row(c("2015~2016 박근혜 정권", "보통"), 6478),
+  rep.row(c("2015~2016 박근혜 정권", "비교적 안전하지 않음"), 11535),
+  rep.row(c("2015~2016 박근혜 정권", "매우 안전하지 않음"), 6806),
+  rep.row(c("2017~2018 문제인 정권", "매우 안전"), 492),
+  rep.row(c("2017~2018 문제인 정권", "비교적 안전"), 4209),
+  rep.row(c("2017~2018 문제인 정권", "보통"), 8747),
+  rep.row(c("2017~2018 문제인 정권", "비교적 안전하지 않음"), 10387),
+  rep.row(c("2017~2018 문제인 정권", "매우 안전하지 않음"), 3499)))
+names(think_g) <- c('집권당', "사회 범죄 안전도에 대한 인식")
+View(think_g)
+sjt.xtab(think_g$`사회 범죄 안전도에 대한 인식`,think_g$집권당 ,show.col.prc=T, show.exp=T,var.labels=c('사회 범죄 안전도에 대한 인식','집권당'),value.labels=list(c('매우안전','비교적 안전','보통','비교적 안전하지 않음','매우 안전하지 않음'),c('2015~2016 박근혜 정권','2017~2018 문제인 정권')),encoding='EUC-KR')
+
+set_theme(geom.label.size = 4.5, axis.textsize = 1.1,legend.pos="bottom")
+# 도표의 형태는 막대바 형태로 지정, 비율은 열 백분율을 출력하도록 설저하기 위해 margin='col'이렇게 값을 두었다.
+plot_xtab(think_g$`사회 범죄 안전도에 대한 인식`, think_g$집권당, type="bar",
+y.offset = 0.01,
+margin = "col", coord.flip = T, wrap.labels = 7,
+geom.colors = "Set2", show.summary = T, show.total = F,
+axis.titles = '사회 범죄 안전도에 대한 인식',
+axis.labels = c('매우안전','비교적 안전','보통','비교적 안전하지 않음','매우 안전하지 않음'),
+legend.title = "집권당",
+legend.labels = c('2015~2016 박근혜 정권','2017~2018 문제인 정권'))
+```
+
+## 집권당에 따라 삶의 만족도가 달라질 것이다.
+```{r}
+life_1<-read.csv('삶의_만족도_시도__20210417030538.csv')%>%mutate(((X2015+X2016)/200)*27336)%>%mutate(((X2017+X2018)/200)*27336)%>%column_to_rownames(var='항목')
+life_1<-life_1[,c(-1,-2,-3,-4)]
+View(life_1)
+names(life_1)<-c('2015~2016 박근혜 정권','2017~2018 문제인 정권')
+print(fit.fis<-CrossTable(as.matrix(life_1),expected=T,chisq=T,prop.c = F,prop.r =F,prop.chisq = F,prop.t = F ))
+```
+
+# 2015~2016년 데이터를 합칠려고 평균을 내다보니 아래와 같이 값이 같아지는 경우가 생긴다..
+```{r}
+rep.row<-function(x,n){
+m <- matrix(rep(x,each=n),nrow=n)
+return(m)
+}
+life_g<- data.frame(rbind(rep.row(c("2015~2016 박근혜 정권", "매우만족"), 3143),
+  rep.row(c("2015~2016 박근혜 정권", "약간 만족"), 7203),
+  rep.row(c("2015~2016 박근혜 정권", "보통"), 12574),
+  rep.row(c("2015~2016 박근혜 정권", "약간 불만족"), 3430),
+  rep.row(c("2015~2016 박근혜 정권", "매우 불만족"),984),
+  rep.row(c("2017~2018 문제인 정권", "매우만족"), 2446),
+  rep.row(c("2017~2018 문제인 정권", "약간 만족"), 7203),
+  rep.row(c("2017~2018 문제인 정권", "보통"), 12437),
+  rep.row(c("2017~2018 문제인 정권", "약간 불만족"), 4114),
+  rep.row(c("2017~2018 문제인 정권", "매우 불만족"), 1134)))
+names(life_g) <- c('집권당', "삶의 만족도")
+View(life_g)
+sjt.xtab(life_g$`삶의 만족도`,life_g$집권당 ,show.col.prc=T, show.exp=T,var.labels=c('삶의 만족도','집권당'),value.labels=list(c('매우만족','약간 만족','보통','약간 불만족','매우 불만족'),c('2015~2016 박근혜 정권','2017~2018 문제인 정권')),encoding='EUC-KR')
+
+set_theme(geom.label.size = 4.5, axis.textsize = 1.1,legend.pos="bottom")
+# 도표의 형태는 막대바 형태로 지정, 비율은 열 백분율을 출력하도록 설저하기 위해 margin='col'이렇게 값을 두었다.
+plot_xtab(life_g$`삶의 만족도`, life_g$집권당, type="bar",
+y.offset = 0.01,
+margin = "col", coord.flip = T, wrap.labels = 7,
+geom.colors = "Set2", show.summary = T, show.total = F,
+axis.titles = '삶의 만족도',
+axis.labels = c('매우만족','약간 만족','보통','약간 불만족','매우 불만족'),
+legend.title = "집권당",
+legend.labels = c('2015~2016 박근혜 정권','2017~2018 문제인 정권'))
+```
+
+
+## 아노바 데이터 전처리
+```{r}
+# 불필요한 열 삭제 및 필요한 데이터 합치기
+진보_지지율<-read.csv('제 6회 전국동시지방선거 (2014).csv ')
+지역_범죄율<-read.csv('범죄발생_지역_20210423233330.csv')
+지역_자살률<-read.csv('지역별 자살률.csv') 
+지역_범죄율<-지역_범죄율[,c(-1,-3)]
+지역_자살률<-지역_자살률[,c(-2,-3)]
+names(지역_범죄율)<-c('region','범죄_data')
+names(지역_자살률)<-c('region','자살_data')
+names(진보_지지율)<-c('region','진보_data')
+
+핵심_데이터<-left_join(지역_범죄율,진보_지지율,by='region')
+핵심_데이터<-left_join(핵심_데이터,지역_자살률,by='region')
+핵심_데이터[is.na(핵심_데이터)] <- 77.96
+```
+```{r}
+# 범죄 관련 독립변수 만들기
+quantile(핵심_데이터$진보_data)
+핵심_데이터$data[핵심_데이터$진보_data<46.905]<-'1' #25%와 50% 사이 임의의 값
+핵심_데이터$data[핵심_데이터$진보_data<52.94&핵심_데이터$진보_data>=46.905]<-'2'#50%와 70% 사이 임의의 값
+핵심_데이터$data[핵심_데이터$진보_data>=52.94]<-'3'
+View(핵심_데이터)
+핵심_데이터$data.factor<-factor(핵심_데이터$data,levels=c(1,2,3),labels=c('진보 지지율이 낮은 집단','진보 지지율이 중간인 집단 ','진보 지지율이 높은 집단 '))
+str(핵심_데이터$data.factor)
+# 범죄율 종속변수는 핵심_데이터$_data 사용하면 될듯../?
+```
+
