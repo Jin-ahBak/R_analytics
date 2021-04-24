@@ -272,7 +272,6 @@ legend.title = "집권당",
 legend.labels = c('2015~2016 박근혜 정권','2017~2018 문제인 정권'))
 ```
 ### 트위터 분석 -워드클라우드, 감정분석
-
 ```{r}
 #install.packages("plyr")
 library(rtweet)
