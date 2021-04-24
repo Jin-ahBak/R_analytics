@@ -1,11 +1,10 @@
 ---
-title: "untitled"
+title: "Untitled"
 author: "ddd"
-date: '2021 4 24 '
-output:
-  word_document: default
-  html_document: default
+date: '2021 4 25 '
+output: html_document
 ---
+
 ## 목차
 
 1. 연구 설정
