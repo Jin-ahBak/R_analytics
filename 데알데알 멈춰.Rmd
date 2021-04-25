@@ -246,11 +246,13 @@ grid.arrange(part1,part2,part3,ncol=3)
 #remotes::install_github('haven-jeon/KoNLP',upgrade = "never",INSTALL_opts=c("--no-multiarch"))
 #install.packages("psych")
 #install.packages("sjPlot")
+
 library(rtweet)
 library(plyr) #laply함수 apply함수 확장,분석하기 쉬운 형태로 나누어 다시 새로운 형태로 만들어줌 
 library(tm)
 library(ggplot2)
 library(wordcloud)
+library(wordcloud2)
 library(stringr)
 library(KoNLP)
 library(RColorBrewer)
@@ -272,9 +274,7 @@ t_txt1 <- as.data.frame(txt)
 
 useNIADic()#사전설정
 useSejongDic()
-```
 
-```{r}
 #트윗 결과 중 텍스트 부분만 추출
 t_txt1 <- as.character(t_txt1) 
 t_txt1 <-sapply(t_txt1,extractNoun,USE.NAMES=F) #명사추출
