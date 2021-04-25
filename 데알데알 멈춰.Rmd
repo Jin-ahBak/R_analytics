@@ -260,18 +260,15 @@ source(file = "TwitterAPIKey.R", echo = FALSE)
 
 
 ##### 2.3.1 더불어 민주당 워드클라우드
-
-트위터에서 #더불어민주당 해시태그를 텍스트로 불러와 단어를 긁어왔습니다. 
+트위터에서 진보당에 대한 #더불어민주당에 해당하는 글들을 가져와 파일에 저장해주었습니다. 
 ```{r}
 #트위터에서 #더불어민주당  텍스트로 불러오기
-#해시태그 단어 긁어오기 
 keyword1 <- enc2utf8("#더불어민주당")
-party1 = search_tweets(keyword1, n=10000, lang ="ko")
+party1 = search_tweets(keyword1, n=1000, lang ="ko")
 save(party1, file = "더불어.Rda")
 load("더불어.Rda") #더불어 민주당 텍스트 불러오기
 txt <- party1  
 t_txt1 <- as.data.frame(txt)
-head(t_txt1$text)
 
 useNIADic()#사전설정
 useSejongDic()
@@ -279,14 +276,14 @@ useSejongDic()
 
 ```{r}
 #트윗 결과 중 텍스트 부분만 추출
-t_txt1 <- as.character(t_txt1) #text만 가져오기 
-t_txt1 <-sapply(t_txt1,extractNoun,USE.NAMES=F)#명사추출
+t_txt1 <- as.character(t_txt1) 
+t_txt1 <-sapply(t_txt1,extractNoun,USE.NAMES=F) #명사추출
 t_txt1 <-unlist(t_txt1)
-
-#두 글자 이상 단어만 뽑아내기
 t_txt1 <-Filter(function(x){nchar(x)>=2& nchar(x)<= 6},t_txt1) 
+```
+트윗 결과 중 텍스트 부분만 가져와 명사를 추출하고 두 글자 이상 단어만 뽑아냈습니다.
 
-
+```{r}
 #필요없는 단어 제거 
 t_txt1 <-gsub("http","",t_txt1)
 t_txt1 <-gsub("제원","",t_txt1)
@@ -296,13 +293,14 @@ t_txt1 <-gsub("야근","",t_txt1)
 t_txt1 <-gsub("후원금","",t_txt1)
 t_txt1 <-gsub("홍영표","",t_txt1)
 
-
 nohandles <- str_replace_all(t_txt1, "#\\w+", "")
 wordCorpus <- Corpus(VectorSource(nohandles))
 wordCorpus <- tm_map(wordCorpus,removePunctuation)#문장부호제거
 wordCorpus <- tm_map(wordCorpus,removeNumbers) #숫자제거
 wordCorpus <- tm_map(wordCorpus, stripWhitespace) #두칸 빈칸 없애기
-
+```
+gsub와 tm_map을 활용해 필요없는 단어들을 지워주었습니다.
+```{r}
 wc1 <- DocumentTermMatrix(wordCorpus)
 # wc1 를 matrix로 변환해서 열 합계를 구하기
 wc1 %>% as.matrix() %>% colSums()-> wordFreq
@@ -314,7 +312,9 @@ head(x = wordFreq, n = 20)
 wordDf <- data.frame( word = names(x = wordFreq),
                               freq = wordFreq,
                               row.names = NULL) 
-
+```
+등장하는 단어들의 빈도수를 행렬로 표현해 열 합계를 구해줬습니다.
+```{r}
 # 워드클라우드로 나타내기 
 pal <- brewer.pal(10,"Set3") #팔레트 정하기
 wordcloud2(wordDf, color= pal,fontFamily="NanumGothic")
