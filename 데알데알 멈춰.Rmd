@@ -2,7 +2,9 @@
 title: "Untitled"
 author: "ddd"
 date: '2021 4 25 '
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
 ## 목차
@@ -232,19 +234,20 @@ grid.arrange(part1,part2,part3,ncol=3)
 - 필요한 라이브러리 불러오기
 ```{r}
 #install.packages("plyr")
-library(rtweet)
-library(plyr) #laply함수 apply함수 확장,분석하기 쉬운 형태로 나누어 다시 새로운 형태로 만들어줌 
-library(tm)
-library(ggplot2)
-library(wordcloud)
-library(stringr)
 #install.packages("rJava")
 #install.packages("memoise")
 #install.packages("multilinguer")
 #install.packages(c('stringr','hash','tau','Sejong', "RSQLite", "devtools"),type = "binary")
 #install.packages("remotes")
 #remotes::install_github('haven-jeon/KoNLP',upgrade = "never",INSTALL_opts=c("--no-multiarch"))
-
+#install.packages("psych")
+#install.packages("sjPlot")
+library(rtweet)
+library(plyr) #laply함수 apply함수 확장,분석하기 쉬운 형태로 나누어 다시 새로운 형태로 만들어줌 
+library(tm)
+library(ggplot2)
+library(wordcloud)
+library(stringr)
 library(KoNLP)
 library(RColorBrewer)
 library(extrafont)
@@ -853,7 +856,7 @@ sjp.aov1(핵심_데이터$자살_data,핵심_데이터$data.factor,geom.size=1.5
 ####### psych패키지 이용한 집단별 평균값 구하기
 + 진보 성향 그룹에 따른 범죄 수 
 ```{r}
-#install.packages("psych")
+
 library(psych)
 describeBy(핵심_데이터$범죄_data,핵심_데이터$data.factor)
 ```
@@ -863,7 +866,7 @@ describeBy(핵심_데이터$범죄_data,핵심_데이터$data.factor)
 
 + 진보 성향에 따른 자살율 
 ```{r}
-#install.packages("psych")
+
 library(psych)
 describeBy(핵심_데이터$자살_data,핵심_데이터$data.factor)
 ```
